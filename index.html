@@ -1,0 +1,2089 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Agro Bangla - Agriculture Collectivized</title>
+
+    <meta
+      name="description"
+      content="Agro Bangla is a proposed farmer-majority-owned agricultural corporation modernizing Bangladeshi agriculture. Farmers own 70% of shares while benefiting from centralized machinery, weather forecasting, and market access."
+    />
+    <meta
+      property="og:title"
+      content="Agro Bangla - Agriculture Collectivized"
+    />
+    <meta
+      property="og:description"
+      content="A farmers-first cooperative model reimagining Bangladeshi agriculture, built on collective ownership and modern infrastructure."
+    />
+    <meta property="og:type" content="website" />
+    <meta
+      property="og:image"
+      content="https://images.unsplash.com/photo-1592982537447-7440770cbfc9?q=80&w=1200&auto=format&fit=crop"
+    />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20100%20100'%3E%3Ccircle%20cx='50'%20cy='50'%20r='48'%20fill='%23d4a331'/%3E%3Ctext%20x='50'%20y='68'%20font-size='55'%20text-anchor='middle'%20font-family='serif'%20font-weight='bold'%20fill='%23163323'%3EA%3C/text%3E%3C/svg%3E"
+    />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap"
+      rel="stylesheet"
+    />
+
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin=""
+    ></script>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              "dark-green": "#163323",
+              golden: "#d4a331",
+              "off-white": "#f4f3ed",
+            },
+            fontFamily: {
+              sans: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
+              serif: ["Playfair Display", "ui-serif", "Georgia", "serif"],
+            },
+          },
+        },
+      };
+    </script>
+
+    <style type="text/tailwindcss">
+      @layer base {
+        body {
+          background-color: #f4f3ed;
+          color: #1a201b;
+          font-family: "Inter", sans-serif;
+        }
+        ::selection {
+          background: #d4a331;
+          color: #163323;
+        }
+      }
+
+      @layer utilities {
+        .glass-nav {
+          background: rgba(22, 51, 35, 0.05);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          border-bottom-color: rgba(255, 255, 255, 0.1);
+        }
+        .solid-nav {
+          background-color: #163323;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+          border-bottom-color: rgba(255, 255, 255, 0.1);
+        }
+        .hero-overlay {
+          background: linear-gradient(
+            to right,
+            rgba(22, 51, 35, 0.8),
+            rgba(22, 51, 35, 0.2)
+          );
+        }
+        .logo-circle {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 44px;
+          height: 44px;
+          background-color: #d4a331;
+          color: #163323;
+          font-weight: 600;
+          font-size: 1.25rem;
+          border-radius: 50%;
+        }
+        .page-section {
+          display: none;
+        }
+        .page-section.active {
+          display: block;
+        }
+        .leaflet-popup-content-wrapper {
+          background-color: #f4f3ed !important;
+          color: #163323 !important;
+          border: 2.5px solid #d4a331 !important;
+          border-radius: 16px !important;
+          font-family: "Inter", sans-serif !important;
+          padding: 4px !important;
+          box-shadow:
+            0 10px 15px -3px rgba(0, 0, 0, 0.1),
+            0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+        }
+        .leaflet-popup-tip {
+          background: #f4f3ed !important;
+          box-shadow: none !important;
+        }
+        .leaflet-container {
+          font-family: "Inter", sans-serif !important;
+          touch-action: pan-x pan-y;
+          z-index: 0 !important;
+        }
+      }
+    </style>
+  </head>
+  <body class="antialiased min-h-screen flex flex-col">
+    <nav
+      id="navbar"
+      class="fixed top-0 left-0 w-full transition-all duration-300 border-b px-6 py-4 flex items-center justify-between glass-nav text-white"
+      style="z-index: 9999"
+    >
+      <div
+        class="flex items-center space-x-2.5 cursor-pointer"
+        onclick="setActivePage('home')"
+      >
+        <div class="flex items-center space-x-2">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 512 512"
+            class="w-[30px] h-[30px] flex-shrink-0"
+            fill="#20c740"
+            aria-label="agrobanglaplc logo"
+          >
+            <path
+              d="M64 96c0-17.7 14.3-32 32-32H215.1c94.2 0 170.7 76.5 170.7 170.7c0 8.1-.6 16.1-1.7 24H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H354.2c-20 40-53 73-93 93V448h32c17.7 0 32 14.3 32 32s-14.3 32-32 32H208c-17.7 0-32-14.3-32-32s14.3-32 32-32h32V357.7C153.8 340.6 96 261 96 167.1V96H64zm151.1 32H160v39.1c0 53.4 34.6 98.7 82.5 115c2.3-15.1 3.5-30.5 3.5-46.1c0-59.6-43.7-108-97.1-108z"
+            />
+          </svg>
+          <span
+            class="text-[#20c740] font-sans text-[22px] font-bold tracking-tighter lowercase leading-none select-none"
+            >agrobanglaplc</span
+          >
+        </div>
+      </div>
+
+      <div class="hidden md:flex items-center space-x-8 text-sm font-medium">
+        <button
+          onclick="setActivePage('mission')"
+          class="nav-link transition hover:text-golden text-white/90"
+          data-page="mission"
+        >
+          Mission
+        </button>
+        <button
+          onclick="setActivePage('model')"
+          class="nav-link transition hover:text-golden text-white/90"
+          data-page="model"
+        >
+          Model
+        </button>
+        <button
+          onclick="setActivePage('impact')"
+          class="nav-link transition hover:text-golden text-white/90"
+          data-page="impact"
+        >
+          Impact
+        </button>
+        <button
+          onclick="setActivePage('locations')"
+          class="nav-link transition hover:text-golden text-white/90"
+          data-page="locations"
+        >
+          Locations
+        </button>
+        <button
+          onclick="setActivePage('weather')"
+          class="nav-link transition hover:text-golden text-white/90 p-1 bg-white/5 rounded-full border border-white/10 hover:bg-white/10 ml-2"
+          data-page="weather"
+          title="Weather Reports"
+          aria-label="Weather Reports"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="flex items-center space-x-3 sm:space-x-4">
+        <button
+          onclick="setActivePage('join')"
+          class="hidden sm:block bg-golden text-dark-green px-5 py-2 rounded-full font-semibold text-sm hover:shadow-lg hover:-translate-y-0.5 transition-all"
+        >
+          Partner With Us
+        </button>
+        <button
+          id="mobile-menu-btn"
+          onclick="openMobileMenu()"
+          class="md:hidden text-white hover:text-golden transition-colors focus:outline-none p-1"
+          aria-label="Open menu"
+          aria-expanded="false"
+          aria-controls="mobile-menu"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="28"
+            height="28"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <line x1="4" x2="20" y1="12" y2="12" />
+            <line x1="4" x2="20" y1="6" y2="6" />
+            <line x1="4" x2="20" y1="18" y2="18" />
+          </svg>
+        </button>
+      </div>
+    </nav>
+
+    <div
+      id="mobile-menu"
+      class="fixed inset-0 bg-[#163323]/98 backdrop-blur-xl flex-col items-center justify-center space-y-8 text-xl font-medium hidden"
+      style="z-index: 10000"
+    >
+      <button
+        onclick="closeMobileMenu()"
+        class="absolute top-6 right-6 text-white hover:text-golden p-2"
+        aria-label="Close menu"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="32"
+          height="32"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <line x1="18" y1="6" x2="6" y2="18" />
+          <line x1="6" y1="6" x2="18" y2="18" />
+        </svg>
+      </button>
+      <button
+        onclick="setActivePage('mission')"
+        class="nav-link-mobile transition text-golden hover:text-yellow-400"
+        data-page="mission"
+      >
+        Mission
+      </button>
+      <button
+        onclick="setActivePage('model')"
+        class="nav-link-mobile transition text-golden hover:text-yellow-400"
+        data-page="model"
+      >
+        Model
+      </button>
+      <button
+        onclick="setActivePage('impact')"
+        class="nav-link-mobile transition text-golden hover:text-yellow-400"
+        data-page="impact"
+      >
+        Impact
+      </button>
+      <button
+        onclick="setActivePage('locations')"
+        class="nav-link-mobile transition text-golden hover:text-yellow-400"
+        data-page="locations"
+      >
+        Locations
+      </button>
+      <button
+        onclick="setActivePage('weather')"
+        class="nav-link-mobile transition text-golden hover:text-yellow-400"
+        data-page="weather"
+      >
+        Weather
+      </button>
+      <button
+        onclick="
+          setActivePage('join');
+          closeMobileMenu();
+        "
+        class="bg-golden text-dark-green px-8 py-3 rounded-full font-semibold text-lg mt-4 shadow-lg"
+      >
+        Partner With Us
+      </button>
+    </div>
+
+    <main class="flex-grow">
+      <section
+        id="home"
+        class="page-section active relative min-h-screen flex items-center pt-24 pb-16"
+      >
+        <div
+          class="absolute inset-0 z-0 bg-cover bg-center"
+          style="
+            background-image: url(&quot;https://images.unsplash.com/photo-1592982537447-7440770cbfc9?q=80&w=2500&auto=format&fit=crop&quot;);
+          "
+        >
+          <div class="absolute inset-0 hero-overlay"></div>
+        </div>
+
+        <div
+          class="relative z-10 w-full max-w-7xl mx-auto px-6 text-white md:mt-16"
+        >
+          <div class="max-w-3xl">
+            <p
+              class="text-golden text-sm tracking-[0.2em] font-medium uppercase mb-6 flex items-center"
+            >
+              <span class="w-6 h-[1px] bg-golden mr-4"></span>
+              Concept Proposal 2026
+            </p>
+
+            <h1
+              class="font-serif text-5xl md:text-7xl lg:text-[5rem] leading-[1.1] mb-6 shadow-sm"
+            >
+              Agriculture <br />
+              <span class="text-golden">Collectivized.</span><br />
+              Bangladesh <br />
+              Transformed.
+            </h1>
+
+            <p
+              class="text-lg md:text-xl text-white/90 font-light mb-10 max-w-2xl leading-relaxed"
+            >
+              A farmers-first cooperative model reimagining Bangladeshi
+              agriculture built on collective ownership, modern infrastructure,
+              and deep respect for rural socioeconomic realities.
+            </p>
+
+            <div class="flex flex-col sm:flex-row items-start gap-4">
+              <button
+                onclick="setActivePage('mission')"
+                class="bg-golden text-dark-green px-8 py-3.5 rounded-full font-semibold hover:bg-yellow-500 transition-colors"
+              >
+                Explore the Vision
+              </button>
+              <button
+                onclick="setActivePage('model')"
+                class="border border-white/40 bg-white/5 backdrop-blur-md text-white px-8 py-3.5 rounded-full font-semibold hover:bg-white/20 transition-colors"
+              >
+                The Model
+              </button>
+            </div>
+            <p class="mt-4 text-xs text-white/60 font-light italic">
+              * Agro Bangla is a proposed project. It is not involved with any
+              company/product.
+            </p>
+          </div>
+        </div>
+
+        <div class="absolute bottom-6 right-6 z-20">
+          <button
+            onclick="
+              document
+                .getElementById('contact-modal')
+                .classList.remove('hidden')
+            "
+            class="bg-[#163323]/80 backdrop-blur text-white p-3 rounded-full hover:bg-dark-green transition-all shadow-lg border border-white/10"
+            aria-label="Contact us"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+              <line x1="12" y1="17" x2="12.01" y2="17" />
+            </svg>
+          </button>
+        </div>
+      </section>
+
+      <section
+        id="mission"
+        class="page-section bg-off-white min-h-screen pt-32 pb-24 px-6"
+      >
+        <div class="max-w-5xl mx-auto">
+          <p
+            class="text-dark-green text-xs font-semibold tracking-widest uppercase mb-10"
+          >
+            Our Story & Context
+          </p>
+          <h2
+            class="font-serif text-3xl md:text-[2.75rem] text-[#1a201b] leading-tight mb-8"
+          >
+            Reviving Abandoned Lands to Transform Lives.
+          </h2>
+
+          <div
+            class="space-y-4 text-lg font-light leading-relaxed max-w-4xl mb-12 text-[#1a201b]"
+          >
+            <p
+              class="text-xl md:text-2xl font-serif text-[#163323] border-l-4 border-golden pl-6 mb-8"
+            >
+              The proposed company aims to modernize Bangladeshi agriculture
+              through a farmer-first approach to digitalization and large-scale
+              coordination tailored to Bangladesh's socioeconomic conditions.
+            </p>
+
+            <div class="grid md:grid-cols-2 gap-6 mt-10">
+              <div
+                class="bg-white p-8 rounded-2xl shadow-sm border border-[#e2dfd1]"
+              >
+                <div
+                  class="w-10 h-10 rounded-full bg-golden/20 flex items-center justify-center text-golden mb-4"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="m12 14 4-4" />
+                    <path d="M3.34 19a10 10 0 1 1 17.32 0" />
+                  </svg>
+                </div>
+                <h3 class="font-bold text-[#163323] mb-3">
+                  Land Consolidation & Tech
+                </h3>
+                <p class="text-sm text-[#3d453c]">
+                  The company would acquire land from villages affected by
+                  depopulation due to urbanization, with support from the
+                  government. After consolidating larger areas of farmland,
+                  modern agricultural machinery, technology, and farming
+                  techniques would be introduced to improve productivity and
+                  efficiency.
+                </p>
+              </div>
+
+              <div
+                class="bg-white p-8 rounded-2xl shadow-sm border border-[#e2dfd1]"
+              >
+                <div
+                  class="w-10 h-10 rounded-full bg-golden/20 flex items-center justify-center text-golden mb-4"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                    <circle cx="9" cy="7" r="4" />
+                    <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                  </svg>
+                </div>
+                <h3 class="font-bold text-[#163323] mb-3">
+                  70/30 Ownership Model
+                </h3>
+                <p class="text-sm text-[#3d453c]">
+                  Farmers whose land is acquired would collectively own 70% of
+                  the company's shares. The company retains 30% for management
+                  and growth. At the local level, each farm operates
+                  independently with farmers holding 70% voting power.
+                </p>
+              </div>
+
+              <div
+                class="bg-white p-8 rounded-2xl shadow-sm border border-[#e2dfd1]"
+              >
+                <div
+                  class="w-10 h-10 rounded-full bg-golden/20 flex items-center justify-center text-golden mb-4"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
+                    <line x1="16" x2="16" y1="2" y2="6" />
+                    <line x1="8" x2="8" y1="2" y2="6" />
+                    <line x1="3" x2="21" y1="10" y2="10" />
+                    <path d="M8 14h.01" />
+                    <path d="M12 14h.01" />
+                    <path d="M16 14h.01" />
+                    <path d="M8 18h.01" />
+                    <path d="M12 18h.01" />
+                    <path d="M16 18h.01" />
+                  </svg>
+                </div>
+                <h3 class="font-bold text-[#163323] mb-3">
+                  Centralized Services
+                </h3>
+                <p class="text-sm text-[#3d453c]">
+                  Centralized services include a national legal team, weather
+                  forecasting, risk management, and centralized purchasing,
+                  maintenance, and management of farming equipment allowing
+                  farms to benefit from shared resources.
+                </p>
+              </div>
+
+              <div
+                class="bg-white p-8 rounded-2xl shadow-sm border border-[#e2dfd1]"
+              >
+                <div
+                  class="w-10 h-10 rounded-full bg-golden/20 flex items-center justify-center text-golden mb-4"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9Z" />
+                    <path
+                      d="m3 9 2.45-4.9A2 2 0 0 1 7.24 3h9.52a2 2 0 0 1 1.8 1.1L21 9"
+                    />
+                    <path d="M12 3v6" />
+                  </svg>
+                </div>
+                <h3 class="font-bold text-[#163323] mb-3">
+                  Alternative Employment
+                </h3>
+                <p class="text-sm text-[#3d453c]">
+                  Employment is prioritized for families assigning land. For
+                  others, the company provides training, investment, and support
+                  to help establish small businesses like bakeries, ensuring
+                  local economic opportunities.
+                </p>
+              </div>
+
+              <div
+                class="bg-white p-8 rounded-2xl shadow-sm border border-[#e2dfd1] md:col-span-2"
+              >
+                <div class="flex flex-col md:flex-row gap-6 items-start">
+                  <div
+                    class="w-10 h-10 rounded-full bg-golden/20 flex-shrink-0 flex items-center justify-center text-golden mt-1"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path
+                        d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"
+                      />
+                      <path d="m3.3 7 8.7 5 8.7-5" />
+                      <path d="M12 22V12" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 class="font-bold text-[#163323] mb-3">
+                      Direct-to-Consumer & Sustainability
+                    </h3>
+                    <p class="text-sm text-[#3d453c] text-justify md:text-left">
+                      In addition to farming operations, the company would work
+                      to create direct farmer-to-consumer food exchange systems,
+                      reducing dependence on intermediaries that often increase
+                      prices while reducing farmers' earnings. The company would
+                      also support sustainable agriculture practices, climate
+                      resilience, weather-related risk mitigation, and other
+                      services designed to improve long-term agricultural
+                      stability and profitability.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div
+              class="bg-dark-green text-white p-8 rounded-2xl mt-8 text-center italic text-lg font-serif"
+            >
+              "The overall goal is to create a nationwide network of modern,
+              digitally connected farms that remain majority-owned by farmers
+              while benefiting from centralized expertise, resources, and
+              support systems."
+            </div>
+          </div>
+
+          <div class="mt-16 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div
+              class="w-full h-[300px] rounded-[24px] overflow-hidden shadow-lg border border-[#e2dfd1]"
+            >
+              <img
+                src="https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=1200&auto=format&fit=crop"
+                alt="Dried and abandoned fields awaiting reclamation"
+                loading="lazy"
+                class="w-full h-full object-cover object-center"
+              />
+            </div>
+            <div
+              class="w-full h-[300px] rounded-[24px] overflow-hidden shadow-lg border border-[#e2dfd1]"
+            >
+              <img
+                src="https://thefe-bd.sgp1.cdn.digitaloceanspaces.com/uploads/1616600725.jpg"
+                alt="Farmer working in a paddy field"
+                loading="lazy"
+                class="w-full h-full object-cover object-top"
+              />
+            </div>
+            <div
+              class="w-full h-[300px] rounded-[24px] overflow-hidden shadow-lg border border-[#e2dfd1]"
+            >
+              <img
+                src="https://images.unsplash.com/photo-1592982537447-7440770cbfc9?q=80&w=1200&auto=format&fit=crop"
+                alt="Community planting rice together"
+                loading="lazy"
+                class="w-full h-full object-cover object-center"
+              />
+            </div>
+            <div
+              class="w-full h-[300px] rounded-[24px] overflow-hidden shadow-lg border border-[#e2dfd1]"
+            >
+              <img
+                src="https://images.unsplash.com/photo-1530267981375-f0de937f5f13?q=80&w=1200&auto=format&fit=crop"
+                alt="Modern tractor preparing a field"
+                loading="lazy"
+                class="w-full h-full object-cover object-center"
+              />
+            </div>
+          </div>
+
+          <div
+            class="mt-16 bg-white/60 p-8 rounded-2xl border border-[#e2dfd1]"
+          >
+            <h3 class="font-serif text-xl mb-4 text-[#1a201b]">
+              The Co-founders
+            </h3>
+            <ul
+              class="grid grid-cols-2 md:grid-cols-3 gap-4 font-medium text-dark-green"
+            >
+              <li>Sheikh Shifat Nihal</li>
+              <li>Md. Faysal Islam Rabbi</li>
+              <li>Mezbaul Haque Riad</li>
+              <li>Biraj Karmaker Borno</li>
+              <li>Sobbosachi Gharami</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section
+        id="model"
+        class="page-section bg-off-white min-h-screen pt-32 pb-24 px-6 border-t border-[#e2dfd1]"
+      >
+        <div class="max-w-5xl mx-auto">
+          <h2
+            class="font-serif text-3xl md:text-5xl text-center text-[#1a201b] leading-tight mb-16"
+          >
+            A complete agricultural ecosystem, <br class="hidden md:block" />
+            <span class="italic text-gray-600 font-light"
+              >owned by farmers.</span
+            >
+          </h2>
+          <div class="grid md:grid-cols-2 gap-6">
+            <div
+              class="bg-[#f7f6f1] p-10 rounded-[20px] shadow-sm border border-[#e2dfd1] hover:shadow-md transition-shadow"
+            >
+              <p
+                class="text-golden text-xs uppercase tracking-widest font-semibold mb-4"
+              >
+                Phase 1
+              </p>
+              <h3 class="font-serif text-2xl text-[#1a201b] mb-4">
+                Reclaiming Abandoned Land
+              </h3>
+              <p class="text-[#3d453c] font-light leading-relaxed">
+                We identify and consolidate uncultivated, fragmented plots
+                (accounting for nearly 43% of fertile land) to create
+                large-scale, viable agricultural zones.
+              </p>
+            </div>
+            <div
+              class="bg-[#f7f6f1] p-10 rounded-[20px] shadow-sm border border-[#e2dfd1] hover:shadow-md transition-shadow"
+            >
+              <p
+                class="text-golden text-xs uppercase tracking-widest font-semibold mb-4"
+              >
+                Phase 2
+              </p>
+              <h3 class="font-serif text-2xl text-[#1a201b] mb-4">
+                The 70/30 Distribution Model
+              </h3>
+              <p class="text-[#3d453c] font-light leading-relaxed">
+                70% is distributed to skilled local farmers — ensuring fair
+                livelihoods and stopping urban migration — while we retain 30%
+                for management and tech integration.
+              </p>
+            </div>
+            <div
+              class="bg-[#f7f6f1] p-10 rounded-[20px] shadow-sm border border-[#e2dfd1] hover:shadow-md transition-shadow"
+            >
+              <p
+                class="text-golden text-xs uppercase tracking-widest font-semibold mb-4"
+              >
+                Phase 3
+              </p>
+              <h3 class="font-serif text-2xl text-[#1a201b] mb-4">
+                Tech-Driven Cultivation
+              </h3>
+              <p class="text-[#3d453c] font-light leading-relaxed">
+                Providing farmers with advanced machinery and modern
+                agricultural knowledge, reducing physical labor and bringing
+                foreign-class agricultural efficiency to Bangladesh.
+              </p>
+            </div>
+            <div
+              class="bg-[#f7f6f1] p-10 rounded-[20px] shadow-sm border border-[#e2dfd1] hover:shadow-md transition-shadow"
+            >
+              <p
+                class="text-golden text-xs uppercase tracking-widest font-semibold mb-4"
+              >
+                Phase 4
+              </p>
+              <h3 class="font-serif text-2xl text-[#1a201b] mb-4">
+                Centralized Agriculture
+              </h3>
+              <p class="text-[#3d453c] font-light leading-relaxed">
+                Creating a structured, cooperative model to boost national food
+                security. With government collaboration, we target an annual
+                yield increase of up to 67%.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section
+        id="impact"
+        class="page-section bg-dark-green min-h-screen pt-32 pb-24 px-6 flex flex-col justify-center"
+      >
+        <div class="max-w-7xl mx-auto w-full">
+          <h2
+            class="font-serif text-3xl md:text-5xl text-white text-center leading-tight mb-20"
+          >
+            Our Projected Impact
+          </h2>
+          <div
+            class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 md:gap-4 text-center divide-y md:divide-y-0 md:divide-x divide-white/10"
+          >
+            <div class="flex flex-col items-center py-8 md:py-4 px-4">
+              <span
+                class="text-golden font-serif text-5xl md:text-6xl font-semibold mb-4"
+                >350</span
+              >
+              <span
+                class="text-white/70 text-sm tracking-wider uppercase font-medium max-w-[200px]"
+                >Hectares of Suitable Land Found</span
+              >
+            </div>
+            <div class="flex flex-col items-center py-8 md:py-4 px-4">
+              <span
+                class="text-golden font-serif text-5xl md:text-6xl font-semibold mb-4"
+                >43%</span
+              >
+              <span
+                class="text-white/70 text-sm tracking-wider uppercase font-medium max-w-[200px]"
+                >Incompletely Utilized Fertile Land</span
+              >
+            </div>
+            <div class="flex flex-col items-center py-8 md:py-4 px-4">
+              <span
+                class="text-golden font-serif text-5xl md:text-6xl font-semibold mb-4"
+                >70/30</span
+              >
+              <span
+                class="text-white/70 text-sm tracking-wider uppercase font-medium max-w-[200px]"
+                >Farmer & Management Profit Share</span
+              >
+            </div>
+            <div class="flex flex-col items-center py-8 md:py-4 px-4">
+              <span
+                class="text-golden font-serif text-5xl md:text-6xl font-semibold mb-4"
+                >67%</span
+              >
+              <span
+                class="text-white/70 text-sm tracking-wider uppercase font-medium max-w-[200px]"
+                >Projected Yield Increase</span
+              >
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PARTNER / JOIN -->
+      <section
+        id="join"
+        class="page-section bg-off-white min-h-screen pt-32 pb-24 px-6"
+      >
+        <div
+          class="max-w-5xl mx-auto bg-white p-8 md:p-16 rounded-[32px] shadow-xl border border-[#e2dfd1] w-full"
+        >
+          <!-- Header -->
+          <div class="text-center max-w-3xl mx-auto mb-12">
+            <h2 class="font-serif text-3xl md:text-5xl text-dark-green mb-4">
+              Partner With Us
+            </h2>
+            <p class="text-sm md:text-base text-[#3d453c] font-light">
+              We provide custom pathways for local landowners, farming families,
+              and corporate enterprises to collaborate, modernize, and thrive
+              collectively.
+            </p>
+          </div>
+
+          <div class="flex justify-center mb-12">
+            <div
+              class="inline-flex bg-[#f7f6f1] p-1.5 rounded-full border border-[#e2dfd1] shadow-inner"
+            >
+              <button
+                onclick="toggleChoice('farmers')"
+                id="tab-farmers"
+                class="px-6 py-3 rounded-full text-sm font-semibold transition-all duration-300 bg-[#163323] text-white shadow-sm cursor-pointer"
+              >
+                For Farmers (কৃষকদের জন্য)
+              </button>
+              <button
+                onclick="toggleChoice('businesses')"
+                id="tab-businesses"
+                class="px-6 py-3 rounded-full text-sm font-semibold transition-all duration-300 text-dark-green hover:bg-[#e2dfd1]/35 cursor-pointer"
+              >
+                For Businesses (বিনিয়োগকারীদের জন্য)
+              </button>
+            </div>
+          </div>
+
+          <!-- Tab Content 1: For Farmers -->
+          <div
+            id="choice-farmers"
+            class="choice-content block transition-all duration-300"
+          >
+            <div
+              class="bg-[#f7f6f1] p-8 md:p-10 rounded-[20px] mb-12 border border-[#e2dfd1] text-center"
+              lang="bn"
+            >
+              <p
+                class="text-xl md:text-[22px] text-[#1a201b] leading-[1.8] font-medium"
+              >
+                আপনি যদি কোনো কৃষক হন বা জমির মালিক হন, তাহলে আপনি আমাদের সাথে
+                যোগাযোগ করতে পারেন। আমরা আপনাকে উন্নত কৃষি প্রযুক্তি ও
+                প্রয়োজনীয় সকল ব্যবস্থা প্রদান করব। ফসল থেকে প্রাপ্ত আয়ের
+                <span class="text-golden font-bold text-2xl mx-1"
+                  >৭০% আপনার</span
+                >, আর বাকি
+                <span class="text-golden font-bold text-2xl mx-1"
+                  >৩০% আমাদের</span
+                >। আপনাকে সব ধরনের সাহায্য ও পরামর্শ দিতে আমাদের টিম সর্বদা
+                প্রস্তুত।
+              </p>
+            </div>
+            <div class="grid md:grid-cols-2 gap-6">
+              <div
+                class="flex flex-col items-center p-8 bg-dark-green text-white rounded-[20px] hover:-translate-y-1 transition-transform shadow-md border border-[#1e4630]"
+              >
+                <div
+                  class="w-16 h-16 rounded-full bg-golden/20 flex flex-shrink-0 items-center justify-center text-golden mb-6 border border-golden/30 shadow-inner"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="28"
+                    height="28"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <rect width="20" height="16" x="2" y="4" rx="2" />
+                    <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+                  </svg>
+                </div>
+                <p
+                  class="text-xs uppercase tracking-widest text-white/50 font-bold mb-3"
+                >
+                  Email
+                </p>
+                <a
+                  href="mailto:agrobangla.contacts@gmail.com"
+                  class="text-[17px] font-medium text-white hover:text-golden transition"
+                  >agrobangla.contacts@gmail.com</a
+                >
+              </div>
+              <div
+                class="flex flex-col items-center p-8 bg-dark-green text-white rounded-[20px] hover:-translate-y-1 transition-transform shadow-md border border-[#1e4630]"
+              >
+                <div
+                  class="w-16 h-16 rounded-full bg-golden/20 flex flex-shrink-0 items-center justify-center text-golden mb-6 border border-golden/30 shadow-inner"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="28"
+                    height="28"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"
+                    />
+                  </svg>
+                </div>
+                <p
+                  class="text-xs uppercase tracking-widest text-white/50 font-bold mb-3"
+                >
+                  Phone
+                </p>
+                <div class="text-center space-y-2">
+                  <a
+                    href="tel:+8801309605532"
+                    class="block text-[17px] font-medium text-white hover:text-golden transition"
+                    >+880 1309605532</a
+                  >
+                  <a
+                    href="tel:+8801788747060"
+                    class="block text-[17px] font-medium text-white hover:text-golden transition"
+                    >+880 1788747060</a
+                  >
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab Content 2: For Businesses -->
+          <div
+            id="choice-businesses"
+            class="choice-content hidden transition-all duration-300"
+          >
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
+              <!-- Left Info Block -->
+              <div
+                class="lg:col-span-5 space-y-8 bg-[#f7f6f1] p-8 rounded-2xl border border-[#e2dfd1]"
+              >
+                <h3 class="font-serif text-xl text-dark-green font-semibold">
+                  Corporate Channels
+                </h3>
+                <p class="text-xs text-[#3d453c] font-light leading-relaxed">
+                  Connect with our commercial department to establish supply
+                  contracts, wholesale procurement channels, and cold chain
+                  distribution agreements.
+                </p>
+
+                <div class="space-y-6">
+                  <div class="flex items-start space-x-4">
+                    <div
+                      class="w-12 h-12 rounded-xl bg-dark-green text-golden flex flex-shrink-0 items-center justify-center border border-golden/20 shadow-sm"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="22"
+                        height="22"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path
+                          d="M22 21H2V3l7 4v3l7-4v3l6-4v18zm-16-4H4v-2h2v2zm0-4H4v-2h2v2zm4 4H8v-2h2v2zm0-4H8v-2h2v2zm4 4h-2v-2h2v2zm0-4h-2v-2h2v2zm4 4h-2v-2h2v2zm0-4h-2v-2h2v2z"
+                        />
+                      </svg>
+                    </div>
+                    <div>
+                      <h4 class="text-sm font-semibold text-dark-green">
+                        Processing Plant Partnerships
+                      </h4>
+                      <p
+                        class="text-xs text-[#3d453c] mt-1 font-light leading-snug"
+                      >
+                        Contract supply setups for agro-processors and
+                        institutional packaging giants.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div class="flex items-start space-x-4">
+                    <div
+                      class="w-12 h-12 rounded-xl bg-dark-green text-golden flex flex-shrink-0 items-center justify-center border border-golden/20 shadow-sm"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="22"
+                        height="22"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path
+                          d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"
+                        />
+                        <path d="M14.05 2a9 9 0 0 1 7.9 7.9" />
+                        <path d="M14.05 6a5 5 0 0 1 3.9 3.9" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h4 class="text-sm font-semibold text-dark-green">
+                        B2B Dedicated Desk
+                      </h4>
+                      <p
+                        class="text-xs text-[#3d453c] mt-1 font-light leading-snug"
+                      >
+                        Call-sign hotlines for immediate supply, pricing index,
+                        and logistics coordination.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div class="flex items-start space-x-4">
+                    <div
+                      class="w-12 h-12 rounded-xl bg-dark-green text-golden flex flex-shrink-0 items-center justify-center border border-golden/20 shadow-sm"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="22"
+                        height="22"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                      >
+                        <rect width="20" height="16" x="2" y="4" rx="2" />
+                        <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h4 class="text-sm font-semibold text-dark-green">
+                        Official Bid Proposals
+                      </h4>
+                      <p
+                        class="text-xs text-[#3d453c] mt-1 font-light leading-snug"
+                      >
+                        Secure email portals for request for proposals (RFPs)
+                        and corporate contracts.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div
+                class="lg:col-span-7 bg-white p-6 md:p-8 rounded-2xl border border-[#e2dfd1] shadow-sm"
+              >
+                <h3
+                  class="font-serif text-xl text-dark-green font-semibold mb-6"
+                >
+                  Submit Enterprise Proposal
+                </h3>
+
+                <form
+                  id="businessInquiryForm"
+                  onsubmit="submitEnterpriseProposal(event)"
+                  class="space-y-5"
+                >
+                  <div>
+                    <label
+                      for="b2b-company"
+                      class="block text-xs uppercase tracking-wider text-[#3d453c] font-bold mb-2"
+                      >Company / Institution Name</label
+                    >
+                    <input
+                      type="text"
+                      required
+                      id="b2b-company"
+                      name="company"
+                      placeholder="e.g. Pran-RFL, Golden Harvest, superstores"
+                      class="w-full bg-[#f4f3ed] border border-[#e2dfd1] rounded-xl px-4 py-3 text-sm text-[#1a201b] focus:outline-none focus:border-golden transition-colors"
+                    />
+                  </div>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label
+                        for="b2b-email"
+                        class="block text-xs uppercase tracking-wider text-[#3d453c] font-bold mb-2"
+                        >Business Email</label
+                      >
+                      <input
+                        type="email"
+                        required
+                        id="b2b-email"
+                        name="email"
+                        placeholder="partner@enterprise.com"
+                        class="w-full bg-[#f4f3ed] border border-[#e2dfd1] rounded-xl px-4 py-3 text-sm text-[#1a201b] focus:outline-none focus:border-golden transition-colors"
+                      />
+                    </div>
+                    <div>
+                      <label
+                        for="b2b-phone"
+                        class="block text-xs uppercase tracking-wider text-[#3d453c] font-bold mb-2"
+                        >Phone Number</label
+                      >
+                      <input
+                        type="tel"
+                        id="b2b-phone"
+                        name="phone"
+                        placeholder="+880 1XXX-XXXXXX"
+                        class="w-full bg-[#f4f3ed] border border-[#e2dfd1] rounded-xl px-4 py-3 text-sm text-[#1a201b] focus:outline-none focus:border-golden transition-colors"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label
+                      for="b2b-message"
+                      class="block text-xs uppercase tracking-wider text-[#3d453c] font-bold mb-2"
+                      >Partnership message / What are you looking to
+                      source?</label
+                    >
+                    <textarea
+                      required
+                      id="b2b-message"
+                      name="message"
+                      rows="5"
+                      placeholder="Describe your wholesale food processing or grain supply requirement..."
+                      class="w-full bg-[#f4f3ed] border border-[#e2dfd1] rounded-xl p-4 text-sm text-[#1a201b] focus:outline-none focus:border-golden transition-colors resize-none"
+                    ></textarea>
+                  </div>
+
+                  <div
+                    id="b2b-success-alert"
+                    class="hidden bg-emerald-50 border border-emerald-300 text-emerald-800 p-4 rounded-xl text-xs sm:text-sm font-medium transition-all"
+                  >
+                    <div class="flex items-center space-x-2">
+                      <svg
+                        class="w-5 h-5 text-emerald-600 flex-shrink-0"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                        ></path>
+                      </svg>
+                      <span
+                        >Thank you! Your proposal has been received. Our team
+                        will contact you within 48 hours.</span
+                      >
+                    </div>
+                  </div>
+
+                  <div
+                    id="b2b-error-alert"
+                    class="hidden bg-red-50 border border-red-300 text-red-800 p-4 rounded-xl text-xs sm:text-sm font-medium transition-all"
+                  >
+                    Could not send your message. Please email us directly at
+                    <a
+                      href="mailto:agrobangla.contacts@gmail.com"
+                      class="underline font-semibold"
+                      >agrobangla.contacts@gmail.com</a
+                    >
+                  </div>
+
+                  <div class="pt-2">
+                    <button
+                      type="submit"
+                      id="b2b-submit-btn"
+                      class="w-full bg-dark-green text-white font-semibold py-3.5 rounded-full hover:bg-[#11291c] transition-colors shadow-md flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                      <span>Send Enterprise Inquiry</span>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        class="transform translate-y-px"
+                        aria-hidden="true"
+                      >
+                        <line x1="22" y1="2" x2="11" y2="13" />
+                        <polyline points="22 2 15 22 11 13 2 9 22 2" />
+                      </svg>
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section
+        id="locations"
+        class="page-section bg-off-white min-h-screen pt-32 pb-24 px-6 border-t border-[#e2dfd1]"
+      >
+        <div class="max-w-7xl mx-auto w-full">
+          <div class="text-center mb-12">
+            <p
+              class="text-dark-green text-xs font-semibold tracking-widest uppercase mb-3"
+            >
+              Our Operations on Map
+            </p>
+            <h2
+              class="font-serif text-3xl md:text-[2.75rem] text-[#1a201b] leading-tight mb-4"
+            >
+              Operational & Field Hubs
+            </h2>
+            <p
+              class="text-[#3d453c] max-w-2xl mx-auto font-light leading-relaxed"
+            >
+              We are progressively re-claiming, consolidating, and modernizing
+              arable lands across major administrative divisions of Bangladesh.
+            </p>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+            <div
+              id="hub-cards"
+              class="lg:col-span-5 flex flex-col space-y-4 max-h-[500px] overflow-y-auto pr-2"
+            ></div>
+
+            <div
+              class="lg:col-span-7 h-[400px] lg:h-[500px] rounded-3xl overflow-hidden border-4 border-golden shadow-xl relative"
+              style="z-index: 10"
+            >
+              <div
+                id="map"
+                class="w-full h-full bg-[#f4f3ed] z-0 relative"
+                style="min-height: 100%"
+              ></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section
+        id="weather"
+        class="page-section bg-off-white min-h-screen pt-32 pb-24 px-6 border-t border-[#e2dfd1]"
+      >
+        <div class="max-w-7xl mx-auto w-full">
+          <div class="text-center mb-12">
+            <p
+              class="text-dark-green text-xs font-semibold tracking-widest uppercase mb-3"
+            >
+              Live Automated System
+            </p>
+            <h2
+              class="font-serif text-3xl md:text-[2.75rem] text-[#1a201b] leading-tight mb-4"
+            >
+              Real-Time Agricultural Weather & Satellite
+            </h2>
+            <p
+              class="text-[#3d453c] max-w-2xl mx-auto font-light leading-relaxed"
+            >
+              Our automated meteorological system integrates live data to
+              provide precise forecasting for our operational hubs.
+            </p>
+          </div>
+
+          <div
+            class="mb-12 h-[350px] lg:h-[450px] rounded-3xl overflow-hidden border-4 border-golden shadow-xl relative"
+            style="z-index: 10"
+          >
+            <div
+              id="weather-map"
+              class="w-full h-full bg-[#f4f3ed] z-0 relative"
+              style="min-height: 100%"
+            ></div>
+            <div
+              class="absolute top-4 right-4 z-[400] bg-white/90 backdrop-blur px-3 py-1.5 rounded-full shadow-sm border border-golden text-xs font-bold text-dark-green flex items-center"
+            >
+              <span
+                class="w-2 h-2 rounded-full bg-red-500 animate-pulse mr-2"
+              ></span>
+              Live Satellite Radar
+            </div>
+          </div>
+
+          <div
+            id="weather-cards"
+            class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 mt-8 gap-6"
+          ></div>
+        </div>
+      </section>
+    </main>
+
+    <div
+      id="contact-modal"
+      class="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4 hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="contact-modal-title"
+    >
+      <div
+        class="bg-[#f4f3ed] p-8 md:p-12 rounded-3xl w-full max-w-md relative shadow-2xl"
+      >
+        <button
+          onclick="
+            document.getElementById('contact-modal').classList.add('hidden')
+          "
+          class="absolute top-6 right-6 text-gray-400 hover:text-dark-green transition"
+          aria-label="Close contact dialog"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+        <h3
+          id="contact-modal-title"
+          class="font-serif text-3xl text-dark-green mb-6 border-b border-[#e2dfd1] pb-4"
+        >
+          Partner With Us
+        </h3>
+
+        <div class="space-y-6">
+          <div class="flex items-start space-x-4">
+            <div
+              class="w-12 h-12 rounded-full bg-golden/20 flex flex-shrink-0 items-center justify-center text-golden mt-1"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <rect width="20" height="16" x="2" y="4" rx="2" />
+                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+              </svg>
+            </div>
+            <div>
+              <p
+                class="text-xs uppercase tracking-widest text-[#3d453c] font-semibold mb-1"
+              >
+                Email
+              </p>
+              <a
+                href="mailto:agrobangla.contacts@gmail.com"
+                class="text-lg font-medium text-dark-green hover:underline"
+                >agrobangla.contacts@gmail.com</a
+              >
+            </div>
+          </div>
+          <div class="flex items-start space-x-4">
+            <div
+              class="w-12 h-12 rounded-full bg-golden/20 flex flex-shrink-0 items-center justify-center text-golden mt-1"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path
+                  d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"
+                />
+              </svg>
+            </div>
+            <div>
+              <p
+                class="text-xs uppercase tracking-widest text-[#3d453c] font-semibold mb-1"
+              >
+                Phone
+              </p>
+              <a
+                href="tel:+8801309605532"
+                class="block text-lg font-medium text-dark-green hover:underline mb-2"
+                >+880 1309605532</a
+              >
+              <a
+                href="tel:+8801788747060"
+                class="block text-lg font-medium text-dark-green hover:underline"
+                >+880 1788747060</a
+              >
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-10">
+          <button
+            onclick="
+              document.getElementById('contact-modal').classList.add('hidden')
+            "
+            class="w-full bg-dark-green text-white py-3.5 rounded-full font-semibold hover:bg-[#11291c] transition-colors"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // ====== CONFIG ======
+      // Get a free form endpoint at https://formspree.io and replace YOUR_FORM_ID below.
+      const FORM_ENDPOINT = "https://formspree.io/f/YOUR_FORM_ID";
+
+      const hubs = [
+        {
+          coords: [23.201767, 89.227933],
+          title: "Location Jessore",
+          address: "Area: 73.6 Hectares",
+          detail:
+            "Active operational and cultivation zone covering a large agricultural area.",
+        },
+        {
+          coords: [24.255894, 89.941803],
+          title: "Location Tangail",
+          address: "Area: 70 Hectares",
+          detail:
+            "Agricultural modernization and land consolidation project zone.",
+        },
+        {
+          coords: [25.561197, 89.197853],
+          title: "Location Rangpur",
+          address: "Area: 68.85 Hectares",
+          detail:
+            "Extensive farming block geared towards seasonal crops and advanced tilling.",
+        },
+        {
+          coords: [25.05245, 89.203736],
+          title: "Location Bogura",
+          address: "Area: 108 Hectares (1.08 km²)",
+          detail:
+            "Large-scale unified agricultural zone designed for optimal yield management.",
+        },
+        {
+          coords: [24.367765, 89.347922],
+          title: "Location Sirajgonj",
+          address: "Area: 85.03 Hectares",
+          detail:
+            "Consolidated, high-yield agricultural cluster specializing in advanced grain cultivation.",
+        },
+      ];
+
+      const cities = [
+        { prefix: "dha", name: "Dhaka", lat: 23.8105, lon: 90.4125 },
+        { prefix: "ctg", name: "Chattogram", lat: 22.3569, lon: 91.7832 },
+        { prefix: "raj", name: "Rajshahi", lat: 24.3636, lon: 88.6241 },
+        { prefix: "khu", name: "Khulna", lat: 22.8456, lon: 89.5403 },
+        { prefix: "bar", name: "Barishal", lat: 22.701, lon: 90.3535 },
+        { prefix: "syl", name: "Sylhet", lat: 24.8949, lon: 91.8687 },
+        { prefix: "ran", name: "Rangpur", lat: 25.7439, lon: 89.2752 },
+        { prefix: "mym", name: "Mymensingh", lat: 24.7471, lon: 90.4203 },
+      ];
+
+      const BD_BOUNDS = L.latLngBounds(
+        L.latLng(20.6, 88.0),
+        L.latLng(26.7, 92.7),
+      );
+
+      // Google Roadmap / Street view tiles (lyrs=m) — clean street view with detailed routes and full zoom support
+      function addStreetViewLayer(map, maxZoom) {
+        L.tileLayer(
+          "https://mt{s}.google.com/vt/lyrs=m&hl=en&x={x}&y={y}&z={z}",
+          {
+            attribution: "&copy; Google",
+            maxZoom: maxZoom,
+            maxNativeZoom: 15,
+            subdomains: ["0", "1", "2", "3"],
+          },
+        ).addTo(map);
+      }
+
+      let mapInstance = null;
+      let markers = [];
+
+      // ====== HUB CARDS (rendered from data) ======
+      function renderHubCards() {
+        const container = document.getElementById("hub-cards");
+        container.innerHTML = hubs
+          .map(
+            (hub, idx) => `
+        <div onclick="selectHub(${idx})" id="hub-card-${idx}" class="hub-card cursor-pointer ${idx === 0 ? "bg-white border-2 border-golden" : "bg-white/60 border border-[#e2dfd1]"} p-6 rounded-2xl shadow-sm transition-all hover:shadow-md flex items-start space-x-4">
+          <div class="w-10 h-10 rounded-full bg-golden/20 flex flex-shrink-0 items-center justify-center text-golden mt-1">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 22 1-1c1.4-1.4 2.4-3.2 3-5.2a12.8 12.8 0 0 0 .5-3.3c0-2.9-2.5-5.3-5.5-5.3-.2 0-.3 0-.5.1m-5.4 3.7C5.3 8.2 5 9.4 5 10.7c0 1.2.2 2.3.5 3.3a12.8 12.8 0 0 0 3 5.2l1.5 1.5"/><circle cx="12" cy="11" r="3"/></svg>
+          </div>
+          <div>
+            <span class="block px-2 py-0.5 text-[10px] uppercase font-bold tracking-wider ${idx === 0 ? "bg-dark-green text-golden" : "bg-[#d4a331]/20 text-[#163323]"} w-max rounded mb-2">Operational Hub</span>
+            <h3 class="font-serif text-lg font-bold text-[#163323] mb-1">${hub.title}</h3>
+            <p class="text-xs text-[#3d453c] font-light leading-relaxed mb-1">${hub.detail}</p>
+            <p class="text-[11px] text-[#d4a331] font-semibold">${hub.address}</p>
+          </div>
+        </div>
+      `,
+          )
+          .join("");
+      }
+
+      function initMap() {
+        if (mapInstance) return;
+
+        mapInstance = L.map("map", {
+          zoomControl: false,
+          scrollWheelZoom: true,
+          maxBounds: BD_BOUNDS,
+          maxBoundsViscosity: 1.0,
+          minZoom: 7,
+          maxZoom: 18,
+        }).fitBounds(BD_BOUNDS);
+        L.control.zoom({ position: "bottomright" }).addTo(mapInstance);
+
+        addStreetViewLayer(mapInstance, 18);
+
+        let lastZoom = mapInstance.getZoom();
+        mapInstance.on("zoomend", () => {
+          const currentZoom = mapInstance.getZoom();
+          if (currentZoom > lastZoom) {
+            submitMapRequest(
+              currentZoom,
+              mapInstance.getCenter(),
+              "locations-map",
+            );
+          }
+          lastZoom = currentZoom;
+        });
+
+        hubs.forEach((hub) => {
+          const pinIcon = L.divIcon({
+            className: "custom-div-icon",
+            html: `
+            <div style="position:relative;display:flex;align-items:center;justify-content:center;width:32px;height:32px;">
+              <div style="position:absolute;width:32px;height:32px;border-radius:50%;background:#d4a331;opacity:0.4;animation:pulse 2s infinite;"></div>
+              <div style="position:relative;width:32px;height:32px;border-radius:50%;background:#163323;border:2px solid #d4a331;display:flex;align-items:center;justify-content:center;color:#d4a331;font-weight:bold;font-size:12px;box-shadow:0 4px 12px rgba(0,0,0,0.3);">A</div>
+            </div>
+          `,
+            iconSize: [32, 32],
+            iconAnchor: [16, 16],
+          });
+
+          const popupContent = `
+          <div style="padding:8px;font-family:'Inter',sans-serif;min-width:200px;">
+            <span style="display:inline-block;padding:2px 6px;font-size:9px;text-transform:uppercase;font-weight:700;letter-spacing:0.1em;background:#163323;color:#d4a331;border-radius:4px;margin-bottom:8px;">Agro Bangla Hub</span>
+            <h3 style="font-family:'Playfair Display',serif;font-size:15px;font-weight:700;color:#163323;margin:0 0 4px 0;">${hub.title}</h3>
+            <p style="font-size:12px;color:#3d453c;font-weight:300;line-height:1.5;margin:0 0 8px 0;">${hub.detail}</p>
+            <p style="font-size:10px;color:#d4a331;font-weight:600;margin:0;">${hub.address}</p>
+          </div>
+        `;
+
+          const marker = L.marker(hub.coords, { icon: pinIcon })
+            .addTo(mapInstance)
+            .bindPopup(popupContent);
+
+          markers.push(marker);
+        });
+      }
+
+      function selectHub(index) {
+        if (!mapInstance) initMap();
+
+        const hub = hubs[index];
+
+        document.querySelectorAll(".hub-card").forEach((card, idx) => {
+          if (idx === index) {
+            card.classList.add("border-2", "border-golden", "bg-white");
+            card.classList.remove("border-[#e2dfd1]", "bg-white/60");
+          } else {
+            card.classList.add("border-[#e2dfd1]", "bg-white/60");
+            card.classList.remove("border-2", "border-golden", "bg-white");
+          }
+        });
+
+        mapInstance.flyTo(hub.coords, 14, { animate: true, duration: 1.5 });
+        setTimeout(() => markers[index].openPopup(), 1500);
+      }
+
+      // ====== MOBILE MENU ======
+      function openMobileMenu() {
+        const menu = document.getElementById("mobile-menu");
+        menu.classList.remove("hidden");
+        menu.classList.add("flex");
+        document
+          .getElementById("mobile-menu-btn")
+          .setAttribute("aria-expanded", "true");
+        document.body.style.overflow = "hidden";
+      }
+
+      function closeMobileMenu() {
+        const menu = document.getElementById("mobile-menu");
+        menu.classList.add("hidden");
+        menu.classList.remove("flex");
+        document
+          .getElementById("mobile-menu-btn")
+          .setAttribute("aria-expanded", "false");
+        document.body.style.overflow = "";
+      }
+
+      // ====== PAGE ROUTING (hash-based: shareable links + working back button) ======
+      const VALID_PAGES = [
+        "home",
+        "mission",
+        "model",
+        "impact",
+        "join",
+        "locations",
+        "weather",
+      ];
+
+      function setActivePage(pageId, skipHistory) {
+        if (!VALID_PAGES.includes(pageId)) pageId = "home";
+        closeMobileMenu();
+
+        if (!skipHistory && location.hash !== "#" + pageId) {
+          history.pushState(null, "", "#" + pageId);
+        }
+
+        document
+          .querySelectorAll(".page-section")
+          .forEach((sec) => sec.classList.remove("active"));
+        document.getElementById(pageId).classList.add("active");
+
+        window.scrollTo(0, 0);
+
+        const nav = document.getElementById("navbar");
+
+        document.querySelectorAll(".nav-link").forEach((link) => {
+          if (link.dataset.page === pageId) {
+            link.classList.add("text-golden");
+            link.classList.remove("text-white/90");
+          } else {
+            link.classList.remove("text-golden");
+            link.classList.add("text-white/90");
+          }
+        });
+
+        if (pageId === "home" && window.scrollY <= 50) {
+          nav.classList.add("glass-nav");
+          nav.classList.remove("solid-nav", "py-3");
+        } else {
+          nav.classList.add("solid-nav", "py-3");
+          nav.classList.remove("glass-nav");
+        }
+
+        if (pageId === "locations") {
+          setTimeout(() => {
+            initMap();
+            if (mapInstance) {
+              mapInstance.invalidateSize();
+              mapInstance.fitBounds(BD_BOUNDS);
+            }
+          }, 150);
+        }
+
+        if (pageId === "weather") {
+          setTimeout(() => initWeatherSystem(), 150);
+        }
+      }
+
+      window.addEventListener("popstate", () => {
+        setActivePage(location.hash.slice(1) || "home", true);
+      });
+
+      // ====== WEATHER ======
+      let weatherMapInstance = null;
+
+      function renderWeatherCards() {
+        const container = document.getElementById("weather-cards");
+        container.innerHTML = cities
+          .map(
+            (c) => `
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-[#e2dfd1] flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-6">
+            <div>
+              <h3 class="font-serif text-xl font-bold text-[#163323]">${c.name}</h3>
+              <p class="text-[10px] text-[#3d453c] uppercase tracking-wider font-semibold">Live Weather</p>
+            </div>
+            <div id="${c.prefix}-icon" class="text-golden mt-1">
+              <svg class="animate-spin text-[#d4a331]" xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+            </div>
+          </div>
+          <div class="flex items-end space-x-3 mb-6">
+             <span id="${c.prefix}-temp" class="text-4xl font-light text-[#1a201b]">...</span>
+             <span id="${c.prefix}-desc" class="text-sm text-[#3d453c] font-medium pb-1 truncate">Loading...</span>
+          </div>
+          <div class="grid grid-cols-3 gap-2 border-t border-[#e2dfd1] pt-4">
+            <div>
+               <p class="text-[9px] uppercase tracking-wider text-[#3d453c] font-bold mb-1">Humidity</p>
+               <p id="${c.prefix}-hum" class="text-sm font-medium text-[#163323]">--%</p>
+            </div>
+            <div>
+               <p class="text-[9px] uppercase tracking-wider text-[#3d453c] font-bold mb-1">Wind</p>
+               <p id="${c.prefix}-wind" class="text-sm font-medium text-[#163323]">--</p>
+            </div>
+            <div>
+               <p class="text-[9px] uppercase tracking-wider text-[#3d453c] font-bold mb-1">Rain</p>
+               <p id="${c.prefix}-rain" class="text-sm font-medium text-[#163323]">--%</p>
+            </div>
+          </div>
+        </div>
+      `,
+          )
+          .join("");
+      }
+
+      async function initWeatherSystem() {
+        cities.forEach((c) => fetchWeather(c.lat, c.lon, c.prefix));
+
+        if (!weatherMapInstance) {
+          weatherMapInstance = L.map("weather-map", {
+            zoomControl: false,
+            scrollWheelZoom: true,
+            maxZoom: 18,
+            minZoom: 3,
+            maxBounds: BD_BOUNDS,
+            maxBoundsViscosity: 1.0,
+          }).fitBounds(BD_BOUNDS);
+          L.control.zoom({ position: "bottomright" }).addTo(weatherMapInstance);
+
+          addStreetViewLayer(weatherMapInstance, 18);
+
+          let lastWeatherZoom = weatherMapInstance.getZoom();
+          weatherMapInstance.on("zoomend", () => {
+            const currentZoom = weatherMapInstance.getZoom();
+            if (currentZoom > lastWeatherZoom) {
+              submitMapRequest(
+                currentZoom,
+                weatherMapInstance.getCenter(),
+                "weather-map",
+              );
+            }
+            lastWeatherZoom = currentZoom;
+          });
+
+          // Hub markers on the weather map for context
+          hubs.forEach((hub) => {
+            const pinIcon = L.divIcon({
+              className: "",
+              html: `<div style="width:14px;height:14px;border-radius:50%;background:#163323;border:2.5px solid #d4a331;box-shadow:0 2px 6px rgba(0,0,0,0.4);"></div>`,
+              iconSize: [14, 14],
+              iconAnchor: [7, 7],
+            });
+            L.marker(hub.coords, { icon: pinIcon })
+              .addTo(weatherMapInstance)
+              .bindTooltip(
+                `<span style="font-size:11px;font-weight:600;color:#163323;">${hub.title}</span>`,
+                { permanent: false },
+              );
+          });
+
+          // RainViewer radar overlay
+          try {
+            const rvRes = await fetch(
+              "https://api.rainviewer.com/public/weather-maps.json",
+            );
+            const rvData = await rvRes.json();
+            const pastFrames = rvData.radar.past;
+            if (pastFrames && pastFrames.length > 0) {
+              const lastFrame = pastFrames[pastFrames.length - 1];
+              L.tileLayer(
+                `https://tilecache.rainviewer.com${lastFrame.path}/256/{z}/{x}/{y}/2/1_1.png`,
+                {
+                  opacity: 0.6,
+                  attribution: "RainViewer",
+                  maxNativeZoom: 16,
+                  maxZoom: 18,
+                  errorTileUrl:
+                    "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=",
+                },
+              ).addTo(weatherMapInstance);
+            }
+          } catch (e) {
+            // Radar unavailable — map still works, just no rain overlay
+          }
+        } else {
+          weatherMapInstance.invalidateSize();
+        }
+      }
+
+      async function fetchWeather(lat, lon, prefix) {
+        try {
+          const res = await fetch(
+            `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code&hourly=precipitation_probability&timezone=auto`,
+          );
+          const data = await res.json();
+
+          if (!data || !data.current)
+            throw new Error("Invalid weather data from API");
+
+          const current = data.current;
+          const temp = Math.round(current.temperature_2m);
+          const hum = current.relative_humidity_2m;
+          const wind = current.wind_speed_10m;
+          const rainProb = data.hourly?.precipitation_probability?.[0] || 0;
+          const code = current.weather_code;
+
+          document.getElementById(prefix + "-temp").innerHTML = temp + "&deg;C";
+          document.getElementById(prefix + "-hum").textContent = hum + "%";
+          document.getElementById(prefix + "-wind").textContent =
+            wind + " km/h";
+          document.getElementById(prefix + "-rain").textContent =
+            rainProb + "%";
+
+          // WMO weather codes: 0 clear / 1-3 cloudy / 45,48 fog / 51-67 rain & drizzle / 80-82 showers / 95-99 thunderstorm
+          let desc = "Clear";
+          let iconHtml =
+            '<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>';
+          const cloudIcon =
+            '<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>';
+          const rainIcon =
+            '<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/><path d="M16 19v2"/><path d="M8 19v2"/><path d="M12 19v2"/></svg>';
+
+          if (code >= 1 && code <= 3) {
+            desc = "Partly Cloudy";
+            iconHtml = cloudIcon;
+          } else if (code === 45 || code === 48) {
+            desc = "Foggy";
+            iconHtml = cloudIcon;
+          } else if (code >= 51 && code <= 67) {
+            desc = "Rain";
+            iconHtml = rainIcon;
+          } else if (code >= 80 && code <= 82) {
+            desc = "Rain Showers";
+            iconHtml = rainIcon;
+          } else if (code >= 95) {
+            desc = "Thunderstorm";
+            iconHtml = rainIcon;
+          }
+
+          document.getElementById(prefix + "-desc").textContent = desc;
+          const iconContainer = document.getElementById(prefix + "-icon");
+          iconContainer.innerHTML = iconHtml;
+          iconContainer.classList.remove(
+            "text-[#d4a331]",
+            "text-[#4b5563]",
+            "text-[#163323]",
+          );
+          iconContainer.classList.add(
+            code > 3 ? "text-[#4b5563]" : "text-golden",
+          );
+        } catch (e) {
+          document.getElementById(prefix + "-temp").textContent = "--";
+          document.getElementById(prefix + "-desc").textContent = "Unavailable";
+          document.getElementById(prefix + "-hum").textContent = "--";
+          document.getElementById(prefix + "-wind").textContent = "--";
+          document.getElementById(prefix + "-rain").textContent = "--";
+          const iconEl = document.getElementById(prefix + "-icon");
+          iconEl.innerHTML =
+            '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
+          iconEl.style.color = "#9ca3af";
+        }
+      }
+
+      // Handle scroll for Home page glass nav
+      window.addEventListener("scroll", () => {
+        const activeElement = document.querySelector(".page-section.active");
+        if (!activeElement) return;
+        const activeSec = activeElement.id;
+        const nav = document.getElementById("navbar");
+        if (activeSec === "home") {
+          if (window.scrollY > 50) {
+            nav.classList.add("solid-nav", "py-3");
+            nav.classList.remove("glass-nav");
+          } else {
+            nav.classList.add("glass-nav");
+            nav.classList.remove("solid-nav", "py-3");
+          }
+        }
+      });
+
+      // ====== PARTNER TABS ======
+      window.toggleChoice = function (choice) {
+        const tabFarmers = document.getElementById("tab-farmers");
+        const tabBusinesses = document.getElementById("tab-businesses");
+        const choiceFarmers = document.getElementById("choice-farmers");
+        const choiceBusinesses = document.getElementById("choice-businesses");
+
+        if (
+          !tabFarmers ||
+          !tabBusinesses ||
+          !choiceFarmers ||
+          !choiceBusinesses
+        )
+          return;
+
+        const activeClasses =
+          "px-6 py-3 rounded-full text-sm font-semibold transition-all duration-300 bg-[#163323] text-white shadow-sm cursor-pointer";
+        const inactiveClasses =
+          "px-6 py-3 rounded-full text-sm font-semibold transition-all duration-300 text-dark-green hover:bg-[#e2dfd1]/35 cursor-pointer";
+
+        if (choice === "farmers") {
+          tabFarmers.className = activeClasses;
+          tabBusinesses.className = inactiveClasses;
+          choiceFarmers.classList.remove("hidden");
+          choiceBusinesses.classList.add("hidden");
+        } else {
+          tabBusinesses.className = activeClasses;
+          tabFarmers.className = inactiveClasses;
+          choiceBusinesses.classList.remove("hidden");
+          choiceFarmers.classList.add("hidden");
+        }
+      };
+
+      // ====== B2B FORM (real submission via Formspree) ======
+      window.submitEnterpriseProposal = async function (event) {
+        event.preventDefault();
+
+        const form = document.getElementById("businessInquiryForm");
+        const successAlert = document.getElementById("b2b-success-alert");
+        const errorAlert = document.getElementById("b2b-error-alert");
+        const submitBtn = document.getElementById("b2b-submit-btn");
+
+        successAlert.classList.add("hidden");
+        errorAlert.classList.add("hidden");
+        submitBtn.disabled = true;
+
+        try {
+          const res = await fetch(FORM_ENDPOINT, {
+            method: "POST",
+            body: new FormData(form),
+            headers: { Accept: "application/json" },
+          });
+
+          if (res.ok) {
+            successAlert.classList.remove("hidden");
+            form.reset();
+            setTimeout(() => successAlert.classList.add("hidden"), 8000);
+          } else {
+            errorAlert.classList.remove("hidden");
+          }
+        } catch (e) {
+          errorAlert.classList.remove("hidden");
+        } finally {
+          submitBtn.disabled = false;
+        }
+      };
+
+      const style = document.createElement("style");
+      style.textContent = `
+      @keyframes pulse {
+        0%, 100% { transform: scale(1); opacity: 0.4; }
+        50% { transform: scale(1.4); opacity: 0.15; }
+      }
+    `;
+      document.head.appendChild(style);
+
+      function showNotification(message) {
+        let container = document.getElementById("toast-container");
+        if (!container) {
+          container = document.createElement("div");
+          container.id = "toast-container";
+          container.className =
+            "fixed bottom-6 left-6 z-[9999] flex flex-col space-y-2 pointer-events-none";
+          document.body.appendChild(container);
+        }
+
+        const toast = document.createElement("div");
+        toast.className =
+          "bg-[#163323] text-golden border border-golden/30 px-5 py-3 rounded-full shadow-2xl flex items-center space-x-3 text-xs font-semibold tracking-wider uppercase pointer-events-auto transition-all duration-300 transform translate-y-4 opacity-0";
+        toast.innerHTML = `
+        <svg class="animate-spin h-4 w-4 text-golden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <span>${message}</span>
+      `;
+
+        container.appendChild(toast);
+
+        setTimeout(() => {
+          toast.classList.remove("translate-y-4", "opacity-0");
+        }, 10);
+
+        setTimeout(() => {
+          toast.classList.add("translate-y-[-10px]", "opacity-0");
+          setTimeout(() => toast.remove(), 300);
+        }, 3000);
+      }
+
+      async function submitMapRequest(zoomLevel, center, source) {
+        const lat = center.lat.toFixed(6);
+        const lng = center.lng.toFixed(6);
+
+        try {
+          await fetch(
+            `/api/map-request?zoom=${zoomLevel}&latitude=${lat}&longitude=${lng}&source=${encodeURIComponent(source)}&timestamp=${Date.now()}`,
+          );
+        } catch (e) {
+          // Gracefully ignore mock API failures (traces will still show in devtools)
+        }
+      }
+
+      // ====== INIT ======
+      renderHubCards();
+      renderWeatherCards();
+      setActivePage(location.hash.slice(1) || "home", true);
+    </script>
+  </body>
+</html>
